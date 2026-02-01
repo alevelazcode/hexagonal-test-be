@@ -23,7 +23,10 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiQuery,
   ApiTags,
+  ApiTooManyRequestsResponse,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
@@ -83,6 +86,11 @@ export class MessagingController {
   @ApiOperation({ summary: 'List conversations' })
   @ApiBearerAuth()
   @ApiOkResponse({ type: ListConversationsResponseDto })
+  @ApiBadRequestResponse({ type: ProblemDetailsDto })
+  @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
+  @ApiTooManyRequestsResponse({ type: ProblemDetailsDto })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number })
   @Get('conversations')
   @UseGuards(JwtAccessGuard)
   async list(
@@ -103,6 +111,8 @@ export class MessagingController {
   @ApiBearerAuth()
   @ApiOkResponse({ type: GetConversationResponseDto })
   @ApiNotFoundResponse({ type: ProblemDetailsDto })
+  @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
+  @ApiTooManyRequestsResponse({ type: ProblemDetailsDto })
   @Get('conversations/:conversationId')
   @UseGuards(JwtAccessGuard)
   async get(@Param('conversationId') conversationId: string): Promise<GetConversationResponseDto> {
@@ -119,6 +129,8 @@ export class MessagingController {
   @ApiOkResponse({ type: SendMessageResponseDto })
   @ApiBadRequestResponse({ type: ProblemDetailsDto })
   @ApiNotFoundResponse({ type: ProblemDetailsDto })
+  @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
+  @ApiTooManyRequestsResponse({ type: ProblemDetailsDto })
   @Post('conversations/:conversationId/messages')
   @UseGuards(JwtAccessGuard)
   @HttpCode(200)
@@ -136,6 +148,8 @@ export class MessagingController {
   @ApiBearerAuth()
   @ApiOkResponse({ type: TelegramSyncResponseDto })
   @ApiBadRequestResponse({ type: ProblemDetailsDto })
+  @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
+  @ApiTooManyRequestsResponse({ type: ProblemDetailsDto })
   @Post('telegram/sync')
   @UseGuards(JwtAccessGuard)
   @HttpCode(200)

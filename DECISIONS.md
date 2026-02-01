@@ -41,3 +41,17 @@ This document captures key design decisions and their trade-offs.
 - **Trade-offs**:
   - E2E tests are closer to “contract/integration” tests than fully production-identical.
   - Requires keeping override wiring aligned with DI tokens.
+
+## 5) JWT algorithm allowlist (HS256) + key-size guidance
+
+- **Decision**: Explicitly restrict JWT signing/verifying to `HS256` (instead of relying on library defaults).
+- **Why**:
+  - RFC 8725 recommends algorithm verification and explicit algorithm allowlisting.
+    - [RFC 8725 §3.1](https://www.rfc-editor.org/rfc/rfc8725.html#section-3.1)
+  - RFC 7518 states that for HMAC algorithms the key must be at least the hash output size (e.g. 256 bits for HS256).
+    - [RFC 7518 §3.2](https://www.rfc-editor.org/rfc/rfc7518.html#section-3.2)
+  - `jsonwebtoken` supports an explicit `algorithms` allowlist when verifying tokens.
+    - [node-jsonwebtoken README](https://github.com/auth0/node-jsonwebtoken#jwtverifytoken-secretorpublickey-options-callback)
+- **Trade-offs**:
+  - Reduces algorithm agility unless changed intentionally.
+  - Requires consistent secret/key management across environments.

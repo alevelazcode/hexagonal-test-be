@@ -5,7 +5,7 @@ import { DATABASE } from '@infrastructure/db/database.constants';
 import type { Database } from '@infrastructure/db/database.module';
 import { conversationTable } from '@infrastructure/db/schema';
 import { Inject } from '@nestjs/common';
-import { desc, eq } from 'drizzle-orm';
+import { asc, desc, eq, sql } from 'drizzle-orm';
 
 export class DrizzleConversationRepository implements ConversationRepositoryPort {
   constructor(@Inject(DATABASE) private readonly db: Database) {}
@@ -68,14 +68,24 @@ export class DrizzleConversationRepository implements ConversationRepositoryPort
     });
   }
 
-  async list(): Promise<Conversation[]> {
-    const rows = await this.db
-      .select()
-      .from(conversationTable)
-      .orderBy(desc(conversationTable.lastMessageAt))
-      .all();
+  async list(input: { page: number; pageSize: number }): Promise<{ items: Conversation[]; total: number }> {
+    const offset = (input.page - 1) * input.pageSize;
 
-    return rows.map((row) =>
+    const [rows, totalRow] = await Promise.all([
+      this.db
+        .select()
+        .from(conversationTable)
+        .orderBy(desc(conversationTable.lastMessageAt), asc(conversationTable.id))
+        .limit(input.pageSize)
+        .offset(offset)
+        .all(),
+      this.db
+        .select({ total: sql<number>`count(*)` })
+        .from(conversationTable)
+        .get(),
+    ]);
+
+    const items = rows.map((row) =>
       Conversation.create({
         id: row.id,
         telegramChatId: TelegramChatId.create(row.telegramChatId),
@@ -83,5 +93,10 @@ export class DrizzleConversationRepository implements ConversationRepositoryPort
         lastMessageAt: new Date(row.lastMessageAt),
       }),
     );
+
+    return {
+      items,
+      total: totalRow?.total ?? 0,
+    };
   }
 }

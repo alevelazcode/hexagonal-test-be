@@ -57,6 +57,34 @@ cp .env.example .env
 
 Edit `.env` as needed.
 
+## Environment variables
+
+Environment variables are validated at startup.
+
+- **Local dev**: start from `.env.example`
+- **Tests**: start from `.env.test.example` (note: tests set defaults in `test/vitest.setup.ts`)
+
+Key variables:
+
+- **`NODE_ENV`**: `development` | `test` | `production`
+- **`APP_PORT`**: HTTP port
+- **`SQLITE_DB_PATH`**: SQLite file path (preferred for local)
+- **`DATABASE_URL`**: derived as `file:${SQLITE_DB_PATH}` if not provided
+- **`LOG_LEVEL`**: `fatal` | `error` | `warn` | `log` | `debug` | `verbose`
+- **`CORS_ORIGINS`**: `*` or comma-separated origins
+- **`RATE_LIMIT_TTL_MS`**, **`RATE_LIMIT_LIMIT`**: global throttling
+- **`JWT_ACCESS_SECRET`**, **`JWT_REFRESH_SECRET`**: HS256 secrets
+- **`ACCESS_TOKEN_TTL`**, **`REFRESH_TOKEN_TTL`**: TTLs in ms
+- **`COOKIE_DOMAIN`**: optional
+- **`TELEGRAM_BOT_TOKEN`**: optional
+
+## Security notes
+
+- JWT validation is restricted to an explicit algorithm allowlist.
+  - RFC 8725 recommends algorithm verification: [RFC 8725 §3.1](https://www.rfc-editor.org/rfc/rfc8725.html#section-3.1)
+- For HS256, RFC 7518 states keys of at least the hash output size (256 bits) MUST be used:
+  [RFC 7518 §3.2](https://www.rfc-editor.org/rfc/rfc7518.html#section-3.2)
+
 ## Run
 
 ```bash

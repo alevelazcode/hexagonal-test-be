@@ -12,6 +12,9 @@ export class TelegramPollingService implements OnModuleInit, OnModuleDestroy {
   private timer: NodeJS.Timeout | undefined;
   private running = false;
 
+  private pollLimit = 25;
+  private pollTimeoutSeconds = 0;
+
   constructor(
     @Inject(PROCESS_TELEGRAM_UPDATES_USE_CASE)
     private readonly processTelegramUpdates: ProcessTelegramUpdatesUseCase,
@@ -27,7 +30,9 @@ export class TelegramPollingService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    const intervalMs = 5_000;
+    const intervalMs = this.configService.getOrThrow('TELEGRAM_POLL_INTERVAL_MS', { infer: true });
+    this.pollLimit = this.configService.getOrThrow('TELEGRAM_POLL_LIMIT', { infer: true });
+    this.pollTimeoutSeconds = this.configService.getOrThrow('TELEGRAM_POLL_TIMEOUT_SECONDS', { infer: true });
 
     this.timer = setInterval(() => {
       void this.tick();
@@ -51,7 +56,10 @@ export class TelegramPollingService implements OnModuleInit, OnModuleDestroy {
     this.running = true;
 
     try {
-      await this.processTelegramUpdates.execute({ limit: 25, timeoutSeconds: 0 });
+      await this.processTelegramUpdates.execute({
+        limit: this.pollLimit,
+        timeoutSeconds: this.pollTimeoutSeconds,
+      });
     } catch (error: unknown) {
       this.logger.error(error);
     } finally {

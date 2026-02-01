@@ -46,7 +46,7 @@ describe('ProcessTelegramUpdatesUseCase (unit)', () => {
       update: vi.fn(() => Promise.resolve(undefined)),
       findById: vi.fn(() => Promise.resolve(null)),
       findByTelegramChatId: vi.fn(() => Promise.resolve(null)),
-      list: vi.fn(() => Promise.resolve([])),
+      list: vi.fn(() => Promise.resolve({ items: [], total: 0 })),
     };
 
     const messageRepository: MessageRepositoryPort = {
@@ -110,7 +110,7 @@ describe('ProcessTelegramUpdatesUseCase (unit)', () => {
       update: vi.fn(() => Promise.resolve(undefined)),
       findById: vi.fn(() => Promise.resolve(null)),
       findByTelegramChatId: vi.fn(() => Promise.resolve(null)),
-      list: vi.fn(() => Promise.resolve([])),
+      list: vi.fn(() => Promise.resolve({ items: [], total: 0 })),
     };
 
     const messageRepository: MessageRepositoryPort = {

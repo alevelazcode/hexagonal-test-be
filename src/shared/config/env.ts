@@ -32,6 +32,10 @@ const refreshTokenTtlMsSchema = z.coerce
   .positive()
   .default(30 * 24 * 60 * 60_000);
 
+const telegramPollIntervalMsSchema = z.coerce.number().int().positive().default(5_000);
+const telegramPollLimitSchema = z.coerce.number().int().min(1).max(100).default(25);
+const telegramPollTimeoutSecondsSchema = z.coerce.number().int().min(0).max(60).default(0);
+
 export const envSchema = (nodeEnv: z.infer<typeof nodeEnvSchema>) =>
   z.object({
     NODE_ENV: nodeEnvSchema,
@@ -51,6 +55,9 @@ export const envSchema = (nodeEnv: z.infer<typeof nodeEnvSchema>) =>
     REFRESH_TOKEN_TTL: refreshTokenTtlMsSchema,
     COOKIE_DOMAIN: z.string().min(1).optional(),
     TELEGRAM_BOT_TOKEN: z.string().min(1).optional(),
+    TELEGRAM_POLL_INTERVAL_MS: telegramPollIntervalMsSchema,
+    TELEGRAM_POLL_LIMIT: telegramPollLimitSchema,
+    TELEGRAM_POLL_TIMEOUT_SECONDS: telegramPollTimeoutSecondsSchema,
   });
 
 export type Env = z.infer<ReturnType<typeof envSchema>>;
@@ -131,6 +138,10 @@ export function validateEnv(config: Record<string, unknown>): Env {
   process.env.JWT_REFRESH_SECRET = normalized.JWT_REFRESH_SECRET;
   process.env.ACCESS_TOKEN_TTL = String(normalized.ACCESS_TOKEN_TTL);
   process.env.REFRESH_TOKEN_TTL = String(normalized.REFRESH_TOKEN_TTL);
+
+  process.env.TELEGRAM_POLL_INTERVAL_MS = String(normalized.TELEGRAM_POLL_INTERVAL_MS);
+  process.env.TELEGRAM_POLL_LIMIT = String(normalized.TELEGRAM_POLL_LIMIT);
+  process.env.TELEGRAM_POLL_TIMEOUT_SECONDS = String(normalized.TELEGRAM_POLL_TIMEOUT_SECONDS);
 
   if (normalized.COOKIE_DOMAIN) {
     process.env.COOKIE_DOMAIN = normalized.COOKIE_DOMAIN;

@@ -11,6 +11,7 @@ export function createOpenApiDocument(app: unknown): OpenAPIObject {
     .addServer('http://localhost:3000')
     .addTag('Auth')
     .addTag('Health')
+    .addTag('Messaging')
     .addBearerAuth()
     .addCookieAuth(REFRESH_TOKEN_COOKIE_NAME)
     .build();

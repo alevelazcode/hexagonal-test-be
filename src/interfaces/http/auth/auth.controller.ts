@@ -30,6 +30,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import type { Env } from '@shared/config/env';
@@ -103,6 +104,7 @@ export class AuthController {
   @ApiCreatedResponse({ type: RegisterUserResponseDto })
   @ApiBadRequestResponse({ type: ProblemDetailsDto })
   @ApiConflictResponse({ type: ProblemDetailsDto })
+  @ApiTooManyRequestsResponse({ type: ProblemDetailsDto })
   @Post('register')
   async register(
     @Body(new ValidationPipe({ transform: true, expectedType: RegisterDto })) dto: RegisterDto,
@@ -114,6 +116,7 @@ export class AuthController {
   @ApiOkResponse({ type: AccessTokenResponseDto })
   @ApiBadRequestResponse({ type: ProblemDetailsDto })
   @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
+  @ApiTooManyRequestsResponse({ type: ProblemDetailsDto })
   @Post('login')
   @HttpCode(200)
   async loginUser(
@@ -133,6 +136,7 @@ export class AuthController {
   @ApiCookieAuth()
   @ApiOkResponse({ type: AccessTokenResponseDto })
   @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
+  @ApiTooManyRequestsResponse({ type: ProblemDetailsDto })
   @Post('refresh')
   @UseGuards(JwtRefreshGuard)
   @HttpCode(200)
@@ -172,6 +176,7 @@ export class AuthController {
   @ApiCookieAuth()
   @ApiNoContentResponse()
   @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
+  @ApiTooManyRequestsResponse({ type: ProblemDetailsDto })
   @Post('logout')
   @UseGuards(JwtRefreshGuard)
   @HttpCode(204)
@@ -193,6 +198,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOkResponse({ type: MeResponseDto })
   @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
+  @ApiTooManyRequestsResponse({ type: ProblemDetailsDto })
   @Get('me')
   @UseGuards(JwtAccessGuard)
   async me(@Req() req: AuthRequest): Promise<MeResponseDto> {
