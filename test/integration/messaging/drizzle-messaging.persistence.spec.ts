@@ -41,6 +41,52 @@ describe('Messaging persistence (Drizzle + SQLite)', () => {
     }
   });
 
+  it('paginates conversations list and returns stable total', async () => {
+    const { db, cleanup } = await createMigratedTestDb();
+    try {
+      const repo = new DrizzleConversationRepository(db);
+
+      const c1 = Conversation.create({
+        id: 'c1',
+        telegramChatId: TelegramChatId.create('101'),
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        lastMessageAt: new Date('2026-01-01T00:00:00.000Z'),
+      });
+      const c2 = Conversation.create({
+        id: 'c2',
+        telegramChatId: TelegramChatId.create('102'),
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        lastMessageAt: new Date('2026-01-02T00:00:00.000Z'),
+      });
+      const c3 = Conversation.create({
+        id: 'c3',
+        telegramChatId: TelegramChatId.create('103'),
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        lastMessageAt: new Date('2026-01-03T00:00:00.000Z'),
+      });
+
+      await repo.create(c1);
+      await repo.create(c2);
+      await repo.create(c3);
+
+      const page1 = await repo.list({ page: 1, pageSize: 2 });
+      expect(page1.total).toBe(3);
+      expect(page1.items).toHaveLength(2);
+      expect(page1.items.map((c) => c.id)).toEqual(['c3', 'c2']);
+
+      const page2 = await repo.list({ page: 2, pageSize: 2 });
+      expect(page2.total).toBe(3);
+      expect(page2.items).toHaveLength(1);
+      expect(page2.items[0]?.id).toBe('c1');
+
+      const page3 = await repo.list({ page: 3, pageSize: 2 });
+      expect(page3.total).toBe(3);
+      expect(page3.items).toHaveLength(0);
+    } finally {
+      await cleanup();
+    }
+  });
+
   it('persists and reads messages by conversationId and telegramUpdateId', async () => {
     const { db, cleanup } = await createMigratedTestDb();
     try {

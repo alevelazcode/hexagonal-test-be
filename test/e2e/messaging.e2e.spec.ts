@@ -394,4 +394,148 @@ describe('Messaging (e2e)', () => {
 
     expect(res.body).toHaveProperty('errors');
   });
+
+  it('does not duplicate messages when syncing the same Telegram update twice', async () => {
+    const accessToken = await registerAndLogin();
+
+    const updates: TelegramUpdate[] = [
+      {
+        updateId: 2000,
+        message: {
+          messageId: 777,
+          chatId: '555',
+          date: new Date('2020-01-01T00:00:00.000Z'),
+          text: 'Hello idempotency',
+        },
+      },
+    ];
+
+    telegramClient.setNextUpdates(updates);
+    const firstSync = await request(app!.getHttpServer())
+      .post('/api/v1/messaging/telegram/sync')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ limit: 25, timeoutSeconds: 0 })
+      .expect(200);
+
+    expect(firstSync.body).toMatchObject({
+      processedUpdates: 1,
+      savedInboundMessages: 1,
+      sentReplies: 1,
+    });
+
+    telegramClient.setNextUpdates(updates);
+    const secondSync = await request(app!.getHttpServer())
+      .post('/api/v1/messaging/telegram/sync')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ limit: 25, timeoutSeconds: 0 })
+      .expect(200);
+
+    expect(secondSync.body).toMatchObject({
+      processedUpdates: 1,
+      savedInboundMessages: 0,
+      sentReplies: 0,
+    });
+
+    const listRes = await request(app!.getHttpServer())
+      .get('/api/v1/messaging/conversations')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    const listBody: unknown = listRes.body;
+    if (
+      typeof listBody !== 'object' ||
+      listBody === null ||
+      !('items' in listBody) ||
+      !Array.isArray((listBody as Record<string, unknown>).items)
+    ) {
+      throw new Error('Invalid list conversations response');
+    }
+
+    const items = (listBody as { items: { id: string; telegramChatId: string }[] }).items;
+    const conversationId = String(items.find((c) => c.telegramChatId === '555')?.id);
+    if (!conversationId) {
+      throw new Error('Expected conversation to exist');
+    }
+
+    const getRes = await request(app!.getHttpServer())
+      .get(`/api/v1/messaging/conversations/${conversationId}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    const getBody: unknown = getRes.body;
+    if (
+      typeof getBody !== 'object' ||
+      getBody === null ||
+      !('messages' in getBody) ||
+      !Array.isArray((getBody as Record<string, unknown>).messages)
+    ) {
+      throw new Error('Invalid get conversation response');
+    }
+
+    const messages = (getBody as { messages: { telegramUpdateId?: number }[] }).messages;
+    const inboundForUpdate = messages.filter((m) => m.telegramUpdateId === 2000);
+    expect(inboundForUpdate).toHaveLength(1);
+  });
+
+  it('returns stable total and empty items when requesting a page beyond results', async () => {
+    const accessToken = await registerAndLogin();
+
+    await request(app!.getHttpServer())
+      .post('/api/v1/messaging/telegram/sync')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ limit: 25, timeoutSeconds: 0 })
+      .expect(200);
+
+    const page1 = await request(app!.getHttpServer())
+      .get('/api/v1/messaging/conversations?page=1&pageSize=1')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    const page1Body: unknown = page1.body;
+    if (
+      typeof page1Body !== 'object' ||
+      page1Body === null ||
+      !('total' in page1Body) ||
+      typeof (page1Body as Record<string, unknown>).total !== 'number' ||
+      !('items' in page1Body) ||
+      !Array.isArray((page1Body as Record<string, unknown>).items)
+    ) {
+      throw new Error('Invalid list conversations response');
+    }
+
+    const total = (page1Body as { total: number }).total;
+    const items = (page1Body as { items: unknown[] }).items;
+    expect(items.length).toBeLessThanOrEqual(1);
+    expect(total).toBeGreaterThanOrEqual(1);
+
+    const beyond = await request(app!.getHttpServer())
+      .get('/api/v1/messaging/conversations?page=999&pageSize=1')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    const beyondBody: unknown = beyond.body;
+    if (
+      typeof beyondBody !== 'object' ||
+      beyondBody === null ||
+      !('page' in beyondBody) ||
+      typeof (beyondBody as Record<string, unknown>).page !== 'number' ||
+      !('pageSize' in beyondBody) ||
+      typeof (beyondBody as Record<string, unknown>).pageSize !== 'number' ||
+      !('total' in beyondBody) ||
+      typeof (beyondBody as Record<string, unknown>).total !== 'number' ||
+      !('items' in beyondBody) ||
+      !Array.isArray((beyondBody as Record<string, unknown>).items)
+    ) {
+      throw new Error('Invalid list conversations response');
+    }
+
+    expect(beyondBody).toMatchObject({
+      page: 999,
+      pageSize: 1,
+      total,
+    });
+
+    const beyondItems = (beyondBody as { items: unknown[] }).items;
+    expect(beyondItems).toHaveLength(0);
+  });
 });

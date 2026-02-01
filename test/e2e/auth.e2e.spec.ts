@@ -307,4 +307,41 @@ describe('Auth (e2e)', () => {
     const cookies = typeof setCookieHeader === 'string' ? [setCookieHeader] : setCookieHeader;
     expect(cookies?.some((c) => c.startsWith('refresh_token='))).toBe(true);
   });
+
+  it('rotates refresh token and rejects replay of a previous refresh token', async () => {
+    const email = `user-${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
+    const password = 'password123';
+
+    await registerUser(email, password);
+    const { refreshCookie } = await loginUser(email, password);
+
+    const refreshRes = await request(app!.getHttpServer())
+      .post('/api/v1/auth/refresh')
+      .set('Cookie', refreshCookie)
+      .expect(200);
+
+    expect(refreshRes.body).toHaveProperty('accessToken');
+    const rotatedRefreshCookie = extractRefreshCookie(refreshRes.headers['set-cookie']);
+    expect(rotatedRefreshCookie).not.toBe(refreshCookie);
+
+    const correlationId = 'cid-auth-refresh-replay-old-token';
+    const replayRes = await request(app!.getHttpServer())
+      .post('/api/v1/auth/refresh')
+      .set(CORRELATION_ID_HEADER, correlationId)
+      .set('Cookie', refreshCookie)
+      .expect(401);
+
+    expectProblemDetails(replayRes, {
+      status: 401,
+      title: 'Unauthorized',
+      errorCode: 'token_revoked',
+      instance: '/api/v1/auth/refresh',
+      correlationId,
+      detail: 'Refresh token revoked',
+    });
+
+    const setCookieHeader = replayRes.headers['set-cookie'];
+    const cookies = typeof setCookieHeader === 'string' ? [setCookieHeader] : setCookieHeader;
+    expect(cookies?.some((c) => c.startsWith('refresh_token='))).toBe(true);
+  });
 });
