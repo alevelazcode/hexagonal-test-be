@@ -25,6 +25,7 @@ export class JwtTokenService implements TokenServicePort {
   signAccessToken(payload: AccessTokenPayload, ttlMs: number): Promise<string> {
     return Promise.resolve<string>(
       sign(payload, this.accessSecret, {
+        algorithm: 'HS256',
         expiresIn: toExpiresInSeconds(ttlMs),
       }),
     );
@@ -33,6 +34,7 @@ export class JwtTokenService implements TokenServicePort {
   signRefreshToken(payload: RefreshTokenPayload, ttlMs: number): Promise<string> {
     return Promise.resolve<string>(
       sign(payload, this.refreshSecret, {
+        algorithm: 'HS256',
         expiresIn: toExpiresInSeconds(ttlMs),
       }),
     );
@@ -40,7 +42,7 @@ export class JwtTokenService implements TokenServicePort {
 
   verifyAccessToken(token: string): Promise<AccessTokenPayload> {
     try {
-      const decoded = verify(token, this.accessSecret);
+      const decoded = verify(token, this.accessSecret, { algorithms: ['HS256'] });
       if (typeof decoded === 'string') {
         throw new UnauthorizedError('Unauthorized');
       }
@@ -58,7 +60,7 @@ export class JwtTokenService implements TokenServicePort {
 
   verifyRefreshToken(token: string): Promise<RefreshTokenPayload> {
     try {
-      const decoded = verify(token, this.refreshSecret);
+      const decoded = verify(token, this.refreshSecret, { algorithms: ['HS256'] });
       if (typeof decoded === 'string') {
         throw new UnauthorizedError('Unauthorized');
       }

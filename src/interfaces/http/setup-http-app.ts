@@ -26,6 +26,7 @@ export function setupHttpApp(app: INestApplication): void {
   if (corsOrigins.trim() === '*') {
     app.enableCors({
       origin: true,
+      credentials: true,
     });
   } else {
     const origins = corsOrigins
