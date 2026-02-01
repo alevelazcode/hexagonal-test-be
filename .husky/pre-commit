@@ -1,0 +1,5 @@
+#!/bin/sh
+
+pnpm exec lint-staged
+pnpm run build
+pnpm run test --coverage
