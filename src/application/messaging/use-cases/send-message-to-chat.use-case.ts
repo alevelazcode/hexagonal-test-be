@@ -8,15 +8,7 @@ import type {
 } from '@domain/messaging/ports';
 import { MessageContent } from '@domain/messaging/value-objects';
 
-export interface SendMessageToChatInput {
-  conversationId: string;
-  text: string;
-}
-
-export interface SendMessageToChatResult {
-  messageId: string;
-  telegramMessageId: number;
-}
+import type { SendMessageToChatInput, SendMessageToChatResult } from './send-message-to-chat.types';
 
 export class SendMessageToChatUseCase {
   constructor(

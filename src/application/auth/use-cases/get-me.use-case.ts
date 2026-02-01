@@ -1,15 +1,7 @@
 import { UnauthorizedError } from '@domain/auth/errors';
 import type { UserRepositoryPort } from '@domain/auth/ports';
 
-export interface GetMeInput {
-  userId: string;
-}
-
-export interface GetMeOutput {
-  id: string;
-  email: string;
-  createdAt: string;
-}
+import type { GetMeInput, GetMeOutput } from './get-me.types';
 
 export class GetMeUseCase {
   constructor(private readonly userRepository: UserRepositoryPort) {}

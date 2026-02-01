@@ -3,16 +3,7 @@ import { EmailAlreadyExistsError } from '@domain/auth/errors';
 import type { ClockPort, IdGeneratorPort, PasswordHasherPort, UserRepositoryPort } from '@domain/auth/ports';
 import { Email, PasswordHash } from '@domain/auth/value-objects';
 
-export interface RegisterUserInput {
-  email: string;
-  password: string;
-}
-
-export interface RegisterUserOutput {
-  id: string;
-  email: string;
-  createdAt: string;
-}
+import type { RegisterUserInput, RegisterUserOutput } from './register-user.types';
 
 export class RegisterUserUseCase {
   constructor(

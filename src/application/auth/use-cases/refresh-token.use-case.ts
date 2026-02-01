@@ -8,16 +8,7 @@ import type {
   TokenServicePort,
 } from '@domain/auth/ports';
 
-export interface RefreshTokenInput {
-  refreshToken: string;
-  userId: string;
-  sessionId: string;
-}
-
-export interface RefreshTokenOutput {
-  accessToken: string;
-  refreshToken: string;
-}
+import type { RefreshTokenInput, RefreshTokenOutput } from './refresh-token.types';
 
 export class RefreshTokenUseCase {
   constructor(

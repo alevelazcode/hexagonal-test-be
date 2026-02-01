@@ -1,15 +1,7 @@
-import type { Conversation, Message } from '@domain/messaging';
 import { ConversationNotFoundError } from '@domain/messaging/errors';
 import type { ConversationRepositoryPort, MessageRepositoryPort } from '@domain/messaging/ports';
 
-export interface GetConversationInput {
-  conversationId: string;
-}
-
-export interface GetConversationResult {
-  conversation: Conversation;
-  messages: Message[];
-}
+import type { GetConversationInput, GetConversationResult } from './get-conversation.types';
 
 export class GetConversationUseCase {
   constructor(

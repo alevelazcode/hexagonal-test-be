@@ -11,15 +11,7 @@ import type {
 } from '@domain/auth/ports';
 import { Email, PlainPassword } from '@domain/auth/value-objects';
 
-export interface LoginInput {
-  email: string;
-  password: string;
-}
-
-export interface LoginOutput {
-  accessToken: string;
-  refreshToken: string;
-}
+import type { LoginInput, LoginOutput } from './login.types';
 
 export class LoginUseCase {
   constructor(

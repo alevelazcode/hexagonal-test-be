@@ -11,17 +11,10 @@ import type {
 } from '@domain/messaging/ports';
 import { MessageContent, TelegramChatId } from '@domain/messaging/value-objects';
 
-export interface ProcessTelegramUpdatesInput {
-  limit?: number;
-  timeoutSeconds?: number;
-}
-
-export interface ProcessTelegramUpdatesResult {
-  processedUpdates: number;
-  savedInboundMessages: number;
-  sentReplies: number;
-  newOffset: number;
-}
+import type {
+  ProcessTelegramUpdatesInput,
+  ProcessTelegramUpdatesResult,
+} from './process-telegram-updates.types';
 
 function getTextUpdates(updates: TelegramUpdate[]): TelegramUpdate[] {
   return updates.filter((u) => typeof u.message?.text === 'string' && u.message.text.trim().length > 0);

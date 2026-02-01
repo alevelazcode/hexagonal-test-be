@@ -1,8 +1,6 @@
 import type { ClockPort, RefreshTokenStorePort } from '@domain/auth/ports';
 
-export interface LogoutInput {
-  sessionId: string;
-}
+import type { LogoutInput } from './logout.types';
 
 export class LogoutUseCase {
   constructor(

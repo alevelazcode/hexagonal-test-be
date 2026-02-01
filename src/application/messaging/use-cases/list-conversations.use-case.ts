@@ -1,8 +1,8 @@
-import type { PaginatedResult, PaginationInput } from '@application/common/pagination.types';
+import type { PaginatedResult } from '@application/common/pagination.types';
 import type { Conversation } from '@domain/messaging';
 import type { ConversationRepositoryPort } from '@domain/messaging/ports';
 
-export type ListConversationsInput = PaginationInput;
+import type { ListConversationsInput } from './list-conversations.types';
 
 export class ListConversationsUseCase {
   constructor(private readonly conversationRepository: ConversationRepositoryPort) {}
