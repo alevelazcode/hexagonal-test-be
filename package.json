@@ -29,6 +29,7 @@
     "prepare": "husky || true"
   },
   "dependencies": {
+    "@google/genai": "^1.39.0",
     "@libsql/client": "^0.17.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",

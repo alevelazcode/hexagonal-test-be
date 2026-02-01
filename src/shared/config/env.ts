@@ -36,10 +36,15 @@ const telegramPollIntervalMsSchema = z.coerce.number().int().positive().default(
 const telegramPollLimitSchema = z.coerce.number().int().min(1).max(100).default(25);
 const telegramPollTimeoutSecondsSchema = z.coerce.number().int().min(0).max(60).default(0);
 
+const geminiApiKeySchema = z
+  .string()
+  .transform((value) => value.trim())
+  .refine((value) => value.length > 0);
+
 export const envSchema = (nodeEnv: z.infer<typeof nodeEnvSchema>) =>
   z.object({
     NODE_ENV: nodeEnvSchema,
-    APP_PORT: appPortSchema,
+    PORT: appPortSchema,
     SQLITE_DB_PATH:
       nodeEnv === ENV.PRODUCTION
         ? z.string().min(1).optional()
@@ -58,6 +63,7 @@ export const envSchema = (nodeEnv: z.infer<typeof nodeEnvSchema>) =>
     TELEGRAM_POLL_INTERVAL_MS: telegramPollIntervalMsSchema,
     TELEGRAM_POLL_LIMIT: telegramPollLimitSchema,
     TELEGRAM_POLL_TIMEOUT_SECONDS: telegramPollTimeoutSecondsSchema,
+    GEMINI_API_KEY: geminiApiKeySchema,
   });
 
 export type Env = z.infer<ReturnType<typeof envSchema>>;
@@ -120,7 +126,7 @@ export function validateEnv(config: Record<string, unknown>): Env {
   };
 
   process.env.NODE_ENV = normalized.NODE_ENV;
-  process.env.APP_PORT = String(normalized.APP_PORT);
+  process.env.PORT = String(normalized.PORT);
 
   if (sqliteDbPath) {
     process.env.SQLITE_DB_PATH = sqliteDbPath;
@@ -142,6 +148,8 @@ export function validateEnv(config: Record<string, unknown>): Env {
   process.env.TELEGRAM_POLL_INTERVAL_MS = String(normalized.TELEGRAM_POLL_INTERVAL_MS);
   process.env.TELEGRAM_POLL_LIMIT = String(normalized.TELEGRAM_POLL_LIMIT);
   process.env.TELEGRAM_POLL_TIMEOUT_SECONDS = String(normalized.TELEGRAM_POLL_TIMEOUT_SECONDS);
+
+  process.env.GEMINI_API_KEY = normalized.GEMINI_API_KEY;
 
   if (normalized.COOKIE_DOMAIN) {
     process.env.COOKIE_DOMAIN = normalized.COOKIE_DOMAIN;

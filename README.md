@@ -67,7 +67,7 @@ Environment variables are validated at startup.
 Key variables:
 
 - **`NODE_ENV`**: `development` | `test` | `production`
-- **`APP_PORT`**: HTTP port
+- **`PORT`**: HTTP port
 - **`SQLITE_DB_PATH`**: SQLite file path (preferred for local)
 - **`DATABASE_URL`**: derived as `file:${SQLITE_DB_PATH}` if not provided
 - **`LOG_LEVEL`**: `fatal` | `error` | `warn` | `log` | `debug` | `verbose`

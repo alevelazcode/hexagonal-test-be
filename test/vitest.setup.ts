@@ -6,7 +6,9 @@ import path from 'node:path';
 
 import { faker } from '@faker-js/faker';
 
-process.env.NODE_ENV ??= 'test';
+process.env.NODE_ENV = 'test';
+
+process.env.GEMINI_API_KEY ??= 'test-gemini-api-key';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (typeof databaseUrl === 'string' && databaseUrl.startsWith('file:')) {

@@ -20,6 +20,7 @@ import {
   DrizzleMessageRepository,
   DrizzleTelegramOffsetStore,
   EchoReplyGenerator,
+  GeminiReplyGenerator,
   TelegramHttpClient,
 } from '@infrastructure/messaging';
 import { Module } from '@nestjs/common';
@@ -64,7 +65,17 @@ import { TelegramPollingService } from './telegram-polling.service';
     },
     {
       provide: MESSAGING_REPLY_GENERATOR,
-      useClass: EchoReplyGenerator,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService<Env>): ReplyGeneratorPort => {
+        const nodeEnv = configService.getOrThrow('NODE_ENV', { infer: true });
+        const apiKey = configService.get('GEMINI_API_KEY', { infer: true });
+
+        if (nodeEnv === 'test' || !apiKey) {
+          return new EchoReplyGenerator();
+        }
+
+        return new GeminiReplyGenerator(apiKey);
+      },
     },
     {
       provide: MESSAGING_CLOCK,
