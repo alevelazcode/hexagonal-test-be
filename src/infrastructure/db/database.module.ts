@@ -1,3 +1,6 @@
+import { mkdirSync } from 'node:fs';
+import * as path from 'node:path';
+
 import { DATABASE } from '@infrastructure/db/database.constants';
 import * as schema from '@infrastructure/db/schema';
 import { createClient } from '@libsql/client';
@@ -15,6 +18,17 @@ export type Database = LibSQLDatabase<typeof schema>;
       inject: [ConfigService],
       useFactory: (configService: ConfigService<Env>) => {
         const url = configService.getOrThrow('DATABASE_URL', { infer: true });
+
+        if (url.startsWith('file:')) {
+          const sqlitePath = url.slice('file:'.length);
+          const sqliteFilePath = sqlitePath.replace(/^\/{2,}/, '/');
+          const sqliteDirPath = path.dirname(sqliteFilePath);
+
+          if (sqliteDirPath && sqliteDirPath !== '.' && sqliteDirPath !== '/') {
+            mkdirSync(sqliteDirPath, { recursive: true });
+          }
+        }
+
         const client = createClient({ url });
 
         return drizzle(client, { schema });
