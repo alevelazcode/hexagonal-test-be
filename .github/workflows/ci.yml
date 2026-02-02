@@ -41,7 +41,7 @@ jobs:
         env:
           JWT_ACCESS_SECRET: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           JWT_REFRESH_SECRET: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'ci-gemini-api-key' }}
         run: |
           mkdir -p .tmp
           SQLITE_DB_PATH=./.tmp/ci.db pnpm run swagger:generate

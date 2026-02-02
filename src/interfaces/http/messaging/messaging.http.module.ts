@@ -46,6 +46,17 @@ import {
 } from './messaging.tokens';
 import { TelegramPollingService } from './telegram-polling.service';
 
+export function selectReplyGenerator(
+  nodeEnv: Env['NODE_ENV'],
+  apiKey: string | undefined,
+): ReplyGeneratorPort {
+  if (nodeEnv === 'test' || !apiKey) {
+    return new EchoReplyGenerator();
+  }
+
+  return new GeminiReplyGenerator(apiKey);
+}
+
 @Module({
   imports: [AuthHttpModule, DatabaseModule],
   controllers: [MessagingController],
@@ -70,11 +81,7 @@ import { TelegramPollingService } from './telegram-polling.service';
         const nodeEnv = configService.getOrThrow('NODE_ENV', { infer: true });
         const apiKey = configService.get('GEMINI_API_KEY', { infer: true });
 
-        if (nodeEnv === 'test' || !apiKey) {
-          return new EchoReplyGenerator();
-        }
-
-        return new GeminiReplyGenerator(apiKey);
+        return selectReplyGenerator(nodeEnv, apiKey);
       },
     },
     {

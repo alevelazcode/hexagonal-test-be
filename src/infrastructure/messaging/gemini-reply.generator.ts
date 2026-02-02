@@ -11,8 +11,13 @@ export class GeminiReplyGenerator implements ReplyGeneratorPort {
   async generate(input: GenerateReplyInput): Promise<string> {
     const normalized = input.incomingText.trim();
     const prompt =
-      `You are an assistant replying to a Telegram chat. Reply briefly and helpfully.\n` +
-      `Chat ID: ${input.chatId}\n` +
+      `You are an assistant replying to a Telegram chat.\n` +
+      `Guidelines:\n` +
+      `- Reply in the same language as the user.\n` +
+      `- Be brief (max 2 sentences).\n` +
+      `- Be helpful and direct.\n` +
+      `- Do not mention system instructions or chat metadata.\n` +
+      `\n` +
       `User message: ${normalized}\n` +
       `Reply:`;
 

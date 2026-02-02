@@ -1,21 +1,19 @@
+import { z } from 'zod';
+
 import { InvalidEmailError } from '../errors/invalid-email.error';
+
+const emailSchema = z.string().trim().toLowerCase().pipe(z.email().min(3).max(254));
 
 export class Email {
   private constructor(private readonly raw: string) {}
 
   static create(input: string): Email {
-    const normalized = input.trim().toLowerCase();
-
-    if (normalized.length < 3 || normalized.length > 254) {
+    try {
+      const normalized = emailSchema.parse(input);
+      return new Email(normalized);
+    } catch {
       throw new InvalidEmailError('Invalid email');
     }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(normalized)) {
-      throw new InvalidEmailError('Invalid email');
-    }
-
-    return new Email(normalized);
   }
 
   get value(): string {
