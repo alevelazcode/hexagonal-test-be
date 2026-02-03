@@ -20,7 +20,9 @@ import {
   DrizzleMessageRepository,
   DrizzleTelegramOffsetStore,
   EchoReplyGenerator,
+  FallbackReplyGenerator,
   GeminiReplyGenerator,
+  RandomReplyGenerator,
   TelegramHttpClient,
 } from '@infrastructure/messaging';
 import { Module } from '@nestjs/common';
@@ -50,11 +52,15 @@ export function selectReplyGenerator(
   nodeEnv: Env['NODE_ENV'],
   apiKey: string | undefined,
 ): ReplyGeneratorPort {
-  if (nodeEnv === 'test' || !apiKey) {
+  if (nodeEnv === 'test') {
     return new EchoReplyGenerator();
   }
 
-  return new GeminiReplyGenerator(apiKey);
+  if (!apiKey) {
+    return new RandomReplyGenerator();
+  }
+
+  return new FallbackReplyGenerator(new GeminiReplyGenerator(apiKey), new RandomReplyGenerator());
 }
 
 @Module({

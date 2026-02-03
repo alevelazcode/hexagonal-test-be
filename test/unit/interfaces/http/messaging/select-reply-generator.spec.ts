@@ -1,5 +1,7 @@
 import { EchoReplyGenerator } from '@infrastructure/messaging/echo-reply.generator';
+import { FallbackReplyGenerator } from '@infrastructure/messaging/fallback-reply.generator';
 import { GeminiReplyGenerator } from '@infrastructure/messaging/gemini-reply.generator';
+import { RandomReplyGenerator } from '@infrastructure/messaging/random-reply.generator';
 import { selectReplyGenerator } from '@interfaces/http/messaging/messaging.http.module';
 import { describe, expect, it } from 'vitest';
 
@@ -10,15 +12,16 @@ describe('selectReplyGenerator', () => {
     expect(generator).toBeInstanceOf(EchoReplyGenerator);
   });
 
-  it('returns EchoReplyGenerator when api key is missing', () => {
+  it('returns RandomReplyGenerator when api key is missing', () => {
     const generator = selectReplyGenerator('development', undefined);
 
-    expect(generator).toBeInstanceOf(EchoReplyGenerator);
+    expect(generator).toBeInstanceOf(RandomReplyGenerator);
   });
 
-  it('returns GeminiReplyGenerator when not test env and api key exists', () => {
+  it('returns FallbackReplyGenerator when not test env and api key exists', () => {
     const generator = selectReplyGenerator('development', 'some-key');
 
-    expect(generator).toBeInstanceOf(GeminiReplyGenerator);
+    expect(generator).toBeInstanceOf(FallbackReplyGenerator);
+    expect(generator).not.toBeInstanceOf(GeminiReplyGenerator);
   });
 });

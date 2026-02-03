@@ -21,21 +21,11 @@ export class GeminiReplyGenerator implements ReplyGeneratorPort {
       `User message: ${normalized}\n` +
       `Reply:`;
 
-    try {
-      const response = await this.ai.models.generateContent({
-        model: 'gemini-2.0-flash',
-        contents: prompt,
-      });
+    const response = await this.ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: prompt,
+    });
 
-      const text = typeof response.text === 'string' ? response.text.trim() : '';
-
-      if (text.length > 0) {
-        return text;
-      }
-    } catch (_error) {
-      void _error;
-    }
-
-    return normalized.length > 0 ? `Echo: ${normalized}` : 'Echo';
+    return typeof response.text === 'string' ? response.text.trim() : '';
   }
 }

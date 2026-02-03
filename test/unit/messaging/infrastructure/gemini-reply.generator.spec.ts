@@ -52,21 +52,19 @@ describe('GeminiReplyGenerator', () => {
     expect(contents).toContain('- Be brief (max 2 sentences).');
   });
 
-  it('falls back to echo when Gemini returns empty text', async () => {
+  it('returns empty string when Gemini returns empty text', async () => {
     generateContentMock.mockResolvedValueOnce({ text: '   ' });
 
     const generator = new GeminiReplyGenerator('api-key');
     const reply = await generator.generate({ chatId: '123', incomingText: ' hi ' });
 
-    expect(reply).toBe('Echo: hi');
+    expect(reply).toBe('');
   });
 
-  it('falls back to echo when Gemini throws', async () => {
+  it('propagates the error when Gemini throws', async () => {
     generateContentMock.mockRejectedValueOnce(new Error('boom'));
 
     const generator = new GeminiReplyGenerator('api-key');
-    const reply = await generator.generate({ chatId: '123', incomingText: ' hi ' });
-
-    expect(reply).toBe('Echo: hi');
+    await expect(generator.generate({ chatId: '123', incomingText: ' hi ' })).rejects.toThrow('boom');
   });
 });
