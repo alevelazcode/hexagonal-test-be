@@ -39,7 +39,8 @@ const telegramPollTimeoutSecondsSchema = z.coerce.number().int().min(0).max(60).
 const geminiApiKeySchema = z
   .string()
   .transform((value) => value.trim())
-  .refine((value) => value.length > 0);
+  .refine((value) => value.length > 0)
+  .optional();
 
 export const envSchema = (nodeEnv: z.infer<typeof nodeEnvSchema>) =>
   z.object({
@@ -130,8 +131,6 @@ export function validateEnv(config: Record<string, unknown>): Env {
 
   if (sqliteDbPath) {
     process.env.SQLITE_DB_PATH = sqliteDbPath;
-  } else {
-    delete process.env.SQLITE_DB_PATH;
   }
 
   process.env.DATABASE_URL = databaseUrl;
@@ -149,12 +148,12 @@ export function validateEnv(config: Record<string, unknown>): Env {
   process.env.TELEGRAM_POLL_LIMIT = String(normalized.TELEGRAM_POLL_LIMIT);
   process.env.TELEGRAM_POLL_TIMEOUT_SECONDS = String(normalized.TELEGRAM_POLL_TIMEOUT_SECONDS);
 
-  process.env.GEMINI_API_KEY = normalized.GEMINI_API_KEY;
+  if (normalized.GEMINI_API_KEY) {
+    process.env.GEMINI_API_KEY = normalized.GEMINI_API_KEY;
+  }
 
   if (normalized.COOKIE_DOMAIN) {
     process.env.COOKIE_DOMAIN = normalized.COOKIE_DOMAIN;
-  } else {
-    delete process.env.COOKIE_DOMAIN;
   }
 
   return normalized;
