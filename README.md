@@ -11,7 +11,7 @@ NestJS REST API implementing **Auth** + **Messaging (Telegram)** using a **Hexag
 
 Workflow order:
 
-format → lint → type-check
+format → lint → typecheck → tests
 
 Local commands:
 
@@ -22,6 +22,7 @@ pnpm run lint
 pnpm run lint:fix
 pnpm run typecheck
 pnpm run validate
+pnpm run test -- --coverage
 ```
 
 ## CI
@@ -77,6 +78,7 @@ Key variables:
 - **`ACCESS_TOKEN_TTL`**, **`REFRESH_TOKEN_TTL`**: TTLs in ms
 - **`COOKIE_DOMAIN`**: optional
 - **`TELEGRAM_BOT_TOKEN`**: optional
+- **`GEMINI_API_KEY`**: optional (when missing, replies fall back to random)
 
 ## Security notes
 
@@ -89,6 +91,13 @@ Key variables:
 
 ```bash
 pnpm run start:dev
+```
+
+Production build/run:
+
+```bash
+pnpm run build
+pnpm run start:prod
 ```
 
 The app runs on `http://localhost:3000` by default.
@@ -134,6 +143,34 @@ Telegram polling is enabled only when:
 
 - `NODE_ENV` is not `test`
 - `TELEGRAM_BOT_TOKEN` is configured
+
+## Deployment (Render)
+
+This service can be deployed as a single Node web service.
+
+Suggested configuration:
+
+- **Build command**: `pnpm install && pnpm run build`
+- **Start command**: `pnpm run start:prod`
+
+Required environment variables (production):
+
+- `NODE_ENV=production`
+- `JWT_ACCESS_SECRET` (min 32 chars)
+- `JWT_REFRESH_SECRET` (min 32 chars)
+- `ACCESS_TOKEN_TTL` / `REFRESH_TOKEN_TTL`
+- `DATABASE_URL` or `SQLITE_DB_PATH`
+
+SQLite note:
+
+- If using `SQLITE_DB_PATH`, mount a persistent disk and set e.g. `SQLITE_DB_PATH=/var/data/app.db`.
+- Run migrations on deploy:
+  - `SQLITE_DB_PATH=/var/data/app.db pnpm run db:migrate`
+
+Optional:
+
+- `TELEGRAM_BOT_TOKEN` enables Telegram polling.
+- `GEMINI_API_KEY` enables AI replies; when missing, the service uses random replies.
 
 ## Tests
 

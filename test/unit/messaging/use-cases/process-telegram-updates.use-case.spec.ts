@@ -1,6 +1,8 @@
 import { ProcessTelegramUpdatesUseCase } from '@application/messaging/use-cases/process-telegram-updates.use-case';
 import type { ClockPort } from '@domain/common/ports/clock.port';
+import type { DomainEventPublisherPort } from '@domain/common/ports/domain-event-publisher.port';
 import type { IdGeneratorPort } from '@domain/common/ports/id-generator.port';
+import { MessageReceivedEvent } from '@domain/messaging/events/message-received.event';
 import type { ConversationRepositoryPort } from '@domain/messaging/ports/conversation-repository.port';
 import type { MessageRepositoryPort } from '@domain/messaging/ports/message-repository.port';
 import type { ReplyGeneratorPort } from '@domain/messaging/ports/reply-generator.port';
@@ -59,6 +61,11 @@ describe('ProcessTelegramUpdatesUseCase (unit)', () => {
       generate: vi.fn(() => Promise.resolve('ok')),
     };
 
+    const publishMock = vi.fn<DomainEventPublisherPort['publish']>(() => Promise.resolve(undefined));
+    const domainEventPublisher: DomainEventPublisherPort = {
+      publish: publishMock,
+    };
+
     const useCase = new ProcessTelegramUpdatesUseCase(
       telegramClient,
       offsetStore,
@@ -67,6 +74,7 @@ describe('ProcessTelegramUpdatesUseCase (unit)', () => {
       replyGenerator,
       new SequenceIdGenerator(),
       new QueueClock([new Date('2026-01-01T00:00:00.000Z')]),
+      domainEventPublisher,
     );
 
     const result = await useCase.execute();
@@ -80,6 +88,7 @@ describe('ProcessTelegramUpdatesUseCase (unit)', () => {
 
     expect(offsetStore.setOffset).not.toHaveBeenCalled();
     expect(telegramClient.sendMessage).not.toHaveBeenCalled();
+    expect(publishMock).not.toHaveBeenCalled();
   });
 
   it('persists inbound message, sends reply, and advances offset', async () => {
@@ -123,6 +132,11 @@ describe('ProcessTelegramUpdatesUseCase (unit)', () => {
       generate: vi.fn(() => Promise.resolve('hello back')),
     };
 
+    const publishMock = vi.fn<DomainEventPublisherPort['publish']>(() => Promise.resolve(undefined));
+    const domainEventPublisher: DomainEventPublisherPort = {
+      publish: publishMock,
+    };
+
     const useCase = new ProcessTelegramUpdatesUseCase(
       telegramClient,
       offsetStore,
@@ -131,6 +145,7 @@ describe('ProcessTelegramUpdatesUseCase (unit)', () => {
       replyGenerator,
       new SequenceIdGenerator(),
       new QueueClock([new Date('2026-01-01T00:00:01.000Z')]),
+      domainEventPublisher,
     );
 
     const result = await useCase.execute();
@@ -149,5 +164,19 @@ describe('ProcessTelegramUpdatesUseCase (unit)', () => {
 
     expect(telegramClient.sendMessage).toHaveBeenCalledWith('123', 'hello back');
     expect(offsetStore.setOffset).toHaveBeenCalledWith(102);
+
+    expect(publishMock).toHaveBeenCalledTimes(1);
+    const publishedEvent = publishMock.mock.calls[0]?.[0];
+    if (!publishedEvent) {
+      throw new Error('Expected a domain event to be published');
+    }
+    expect(publishedEvent).toBeInstanceOf(MessageReceivedEvent);
+    const event = publishedEvent as MessageReceivedEvent;
+    expect(event.type).toBe('message_received');
+    expect(event.props).toMatchObject({
+      telegramChatId: '123',
+      telegramUpdateId: 101,
+      text: 'hi',
+    });
   });
 });

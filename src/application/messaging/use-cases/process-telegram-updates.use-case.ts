@@ -1,5 +1,6 @@
-import type { ClockPort, IdGeneratorPort } from '@domain/common/ports';
+import type { ClockPort, DomainEventPublisherPort, IdGeneratorPort } from '@domain/common/ports';
 import { Conversation, Message } from '@domain/messaging';
+import { MessageReceivedEvent } from '@domain/messaging/events/message-received.event';
 import type {
   ConversationRepositoryPort,
   GetUpdatesInput,
@@ -29,6 +30,7 @@ export class ProcessTelegramUpdatesUseCase {
     private readonly replyGenerator: ReplyGeneratorPort,
     private readonly idGenerator: IdGeneratorPort,
     private readonly clock: ClockPort,
+    private readonly domainEventPublisher: DomainEventPublisherPort,
   ) {}
 
   async execute(input?: ProcessTelegramUpdatesInput): Promise<ProcessTelegramUpdatesResult> {
@@ -121,6 +123,17 @@ export class ProcessTelegramUpdatesUseCase {
 
       await this.messageRepository.create(inbound);
       savedInboundMessages += 1;
+
+      await this.domainEventPublisher.publish(
+        new MessageReceivedEvent({
+          messageId: inbound.id,
+          conversationId: conversation.id,
+          telegramChatId: chatId.value,
+          telegramUpdateId: update.updateId,
+          text: inboundContent.value,
+          receivedAt: message.date,
+        }),
+      );
 
       const touched = conversation.touch(message.date);
       await this.conversationRepository.update(touched);

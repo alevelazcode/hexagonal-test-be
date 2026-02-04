@@ -14,6 +14,12 @@ import request, { type Response as SupertestResponse } from 'supertest';
 import type { App } from 'supertest/types';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+let emailSequence = 0;
+function nextTestEmail(): string {
+  emailSequence += 1;
+  return `auth-e2e-user-${emailSequence}@example.com`;
+}
+
 class TestPasswordHasher implements PasswordHasherPort {
   hash(plain: string): Promise<string> {
     return Promise.resolve(`hash:${plain}`);
@@ -156,7 +162,7 @@ describe('Auth (e2e)', () => {
   });
 
   it('returns email_already_exists when registering an existing email', async () => {
-    const email = `user-${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
+    const email = nextTestEmail();
     const password = 'password123';
 
     await registerUser(email, password);
@@ -180,7 +186,7 @@ describe('Auth (e2e)', () => {
   });
 
   it('returns invalid_credentials when logging in with wrong password', async () => {
-    const email = `user-${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
+    const email = nextTestEmail();
     const password = 'password123';
 
     await registerUser(email, password);
@@ -278,7 +284,7 @@ describe('Auth (e2e)', () => {
   });
 
   it('returns token_revoked when refreshing with a revoked session', async () => {
-    const email = `user-${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
+    const email = nextTestEmail();
     const password = 'password123';
 
     await registerUser(email, password);
@@ -309,7 +315,7 @@ describe('Auth (e2e)', () => {
   });
 
   it('rotates refresh token and rejects replay of a previous refresh token', async () => {
-    const email = `user-${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
+    const email = nextTestEmail();
     const password = 'password123';
 
     await registerUser(email, password);

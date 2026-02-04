@@ -37,6 +37,29 @@ The goal is to keep domain/application logic framework-agnostic and isolate exte
   - Sends replies (`TelegramClientPort`).
   - Updates the offset (`TelegramOffsetStorePort`).
 
+### Ports and adapters map
+
+Messaging ports live under `src/domain/messaging/ports/**` and are implemented in `src/infrastructure/messaging/**`.
+
+- `TelegramClientPort` -> `TelegramHttpClient` (real Telegram Bot API) and `DisabledTelegramClient` (no-op)
+- `TelegramOffsetStorePort` -> `DrizzleTelegramOffsetStore`
+- `ConversationRepositoryPort` -> `DrizzleConversationRepository`
+- `MessageRepositoryPort` -> `DrizzleMessageRepository`
+- `ReplyGeneratorPort` -> `GeminiReplyGenerator`, `RandomReplyGenerator`, `EchoReplyGenerator`, `FallbackReplyGenerator`
+
+Driving adapters (HTTP) live in `src/interfaces/http/messaging/**`:
+
+- `MessagingController` exposes admin endpoints (list/get/send/sync)
+- `TelegramPollingService` runs periodic polling when enabled
+
+### Reply generation strategy
+
+Reply generation is selected at wiring time (composition root) based on environment configuration:
+
+- `NODE_ENV=test` -> `EchoReplyGenerator`
+- `GEMINI_API_KEY` missing -> `RandomReplyGenerator`
+- `GEMINI_API_KEY` present -> `FallbackReplyGenerator(GeminiReplyGenerator, RandomReplyGenerator)`
+
 ### Persistence
 
 Messaging persistence is implemented using Drizzle + SQLite:
@@ -55,6 +78,28 @@ Nest modules wire ports to adapters using DI tokens.
   - `src/interfaces/http/messaging/messaging.http.module.ts`
 
 Tokens are defined under `src/interfaces/http/**/**.tokens.ts`.
+
+## CQRS-lite at the application layer
+
+This codebase follows a lightweight CQRS separation by use-case intent:
+
+- Queries (read-only):
+  - `ListConversationsUseCase`
+  - `GetConversationUseCase`
+- Commands (state-changing):
+  - `ProcessTelegramUpdatesUseCase`
+  - `SendMessageToChatUseCase`
+
+The separation is kept simple: there is no event store, no separate read model, and no extra framework.
+
+## Domain events
+
+This codebase includes a minimal domain event approach:
+
+- Domain event: `MessageReceivedEvent`
+- Publisher port: `DomainEventPublisherPort`
+
+The messaging write use case publishes `MessageReceivedEvent` after persisting an inbound Telegram message. The default publisher wiring is a no-op implementation, keeping the behavior unchanged while enabling future event-driven extensions.
 
 ## HTTP
 

@@ -14,6 +14,12 @@ import request, { type Response as SupertestResponse } from 'supertest';
 import type { App } from 'supertest/types';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+let emailSequence = 0;
+function nextTestEmail(): string {
+  emailSequence += 1;
+  return `messaging-e2e-user-${emailSequence}@example.com`;
+}
+
 class TestPasswordHasher implements PasswordHasherPort {
   hash(plain: string): Promise<string> {
     return Promise.resolve(`hash:${plain}`);
@@ -106,7 +112,7 @@ describe('Messaging (e2e)', () => {
   let telegramClient: TestTelegramClient;
 
   async function registerAndLogin(): Promise<string> {
-    const email = `user-${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
+    const email = nextTestEmail();
     const password = 'password123';
 
     await request(app!.getHttpServer()).post('/api/v1/auth/register').send({ email, password }).expect(201);

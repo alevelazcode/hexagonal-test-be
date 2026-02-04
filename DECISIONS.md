@@ -2,6 +2,12 @@
 
 This document captures key design decisions and their trade-offs.
 
+## Explicit trade-offs (exercise rubric)
+
+- I chose **Telegram polling (`getUpdates`)** instead of **webhooks** because it is simpler to run locally and in environments without public HTTPS, and it keeps the system deployable as a single process.
+- I decided not to implement **a full CQRS framework / separate read model / event store** because it would add infrastructure and complexity that is not required for the exercise; instead, the application layer uses simple query vs command use cases.
+- I opted for the **`telegram_offset` “single-row” table keyed by a constant id** because it keeps offset management trivial and transactional without introducing extra tables or state machines.
+
 ## 1) Hexagonal architecture (Ports & Adapters)
 
 - **Decision**: Keep domain/application logic isolated from NestJS/DB/network concerns via ports.

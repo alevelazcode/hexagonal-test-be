@@ -4,7 +4,7 @@ import {
   ProcessTelegramUpdatesUseCase,
   SendMessageToChatUseCase,
 } from '@application/messaging/use-cases';
-import type { ClockPort, IdGeneratorPort } from '@domain/common/ports';
+import type { ClockPort, DomainEventPublisherPort, IdGeneratorPort } from '@domain/common/ports';
 import type {
   ConversationRepositoryPort,
   MessageRepositoryPort,
@@ -13,6 +13,7 @@ import type {
   TelegramOffsetStorePort,
 } from '@domain/messaging/ports';
 import { RandomUuidGenerator, SystemClock } from '@infrastructure/auth';
+import { NoopDomainEventPublisher } from '@infrastructure/common/noop-domain-event.publisher';
 import { DatabaseModule } from '@infrastructure/db/database.module';
 import {
   DisabledTelegramClient,
@@ -40,6 +41,7 @@ import {
   GET_CONVERSATION_USE_CASE,
   LIST_CONVERSATIONS_USE_CASE,
   MESSAGING_CLOCK,
+  MESSAGING_DOMAIN_EVENT_PUBLISHER,
   MESSAGING_ID_GENERATOR,
   MESSAGING_REPLY_GENERATOR,
   MESSAGING_TELEGRAM_CLIENT,
@@ -93,6 +95,10 @@ export function selectReplyGenerator(
     {
       provide: MESSAGING_CLOCK,
       useClass: SystemClock,
+    },
+    {
+      provide: MESSAGING_DOMAIN_EVENT_PUBLISHER,
+      useClass: NoopDomainEventPublisher,
     },
     {
       provide: MESSAGING_ID_GENERATOR,
@@ -158,6 +164,7 @@ export function selectReplyGenerator(
         MESSAGING_REPLY_GENERATOR,
         MESSAGING_ID_GENERATOR,
         MESSAGING_CLOCK,
+        MESSAGING_DOMAIN_EVENT_PUBLISHER,
       ],
       useFactory: (
         telegramClient: TelegramClientPort,
@@ -167,6 +174,7 @@ export function selectReplyGenerator(
         replyGenerator: ReplyGeneratorPort,
         idGenerator: IdGeneratorPort,
         clock: ClockPort,
+        domainEventPublisher: DomainEventPublisherPort,
       ): ProcessTelegramUpdatesUseCase =>
         new ProcessTelegramUpdatesUseCase(
           telegramClient,
@@ -176,6 +184,7 @@ export function selectReplyGenerator(
           replyGenerator,
           idGenerator,
           clock,
+          domainEventPublisher,
         ),
     },
   ],
