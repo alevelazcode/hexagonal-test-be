@@ -40,6 +40,12 @@ It runs:
 - `pnpm run test:e2e`
 - `pnpm run test -- --coverage`
 
+CI guidance:
+
+- Review CI workflows in `.github/workflows/**`.
+- No code is accepted with type errors, lint errors, or failing tests.
+- Add or update tests when behavior changes, even if not explicitly requested.
+
 ## Architecture
 
 Layering conventions:
@@ -48,6 +54,196 @@ Layering conventions:
 - `src/application` contains use-cases and ports (no Nest controllers/DB imports)
 - `src/infrastructure` contains driven adapters (e.g. Drizzle repositories)
 - `src/interfaces` contains driving adapters (HTTP controllers/modules)
+
+### SOLID principles (what they mean + examples from this repo)
+
+SOLID is mentioned as an engineering constraint in `RULES.md` and is enforced through the hexagonal separation.
+
+#### S — Single Responsibility Principle
+
+Classes focus on one reason to change.
+
+Example (repository adapter is only persistence): `src/infrastructure/messaging/drizzle-message.repository.ts`
+
+```ts
+export class DrizzleMessageRepository implements MessageRepositoryPort {
+  constructor(@Inject(DATABASE) private readonly db: Database) {}
+
+  async create(message: Message): Promise<void> {
+    await this.db
+      .insert(messageTable)
+      .values({
+        id: message.id,
+        conversationId: message.conversationId,
+        telegramChatId: message.telegramChatId.value,
+        direction: message.direction,
+        content: message.content.value,
+        createdAt: message.createdAt.toISOString(),
+        telegramUpdateId: message.telegramUpdateId,
+        telegramMessageId: message.telegramMessageId,
+      })
+      .run();
+  }
+}
+```
+
+#### O — Open/Closed Principle
+
+The system is open for extension via ports/adapters, but closed for modification in core use cases.
+
+Example (extend reply generation by adding new implementations of a port):
+
+`src/domain/messaging/ports/reply-generator.port.ts`
+
+```ts
+export interface ReplyGeneratorPort {
+  generate: (input: GenerateReplyInput) => Promise<string>;
+}
+```
+
+`src/infrastructure/messaging/random-reply.generator.ts`
+
+```ts
+export class RandomReplyGenerator implements ReplyGeneratorPort {
+  generate(input: GenerateReplyInput): Promise<string> {
+    void input;
+    const safeReplies = this.replies.length > 0 ? this.replies : DEFAULT_REPLIES;
+
+    const index = Math.floor(this.random() * safeReplies.length);
+    const chosen = safeReplies[index];
+
+    return Promise.resolve(typeof chosen === 'string' && chosen.trim().length > 0 ? chosen : 'Ok.');
+  }
+}
+```
+
+#### L — Liskov Substitution Principle
+
+Any implementation of a port can be substituted where that port is required.
+
+Example (a decorator-style implementation still satisfies `ReplyGeneratorPort`): `src/infrastructure/messaging/fallback-reply.generator.ts`
+
+```ts
+export class FallbackReplyGenerator implements ReplyGeneratorPort {
+  async generate(input: GenerateReplyInput): Promise<string> {
+    try {
+      const primaryText = await this.primary.generate(input);
+      const normalizedPrimary = typeof primaryText === 'string' ? primaryText.trim() : '';
+      if (normalizedPrimary.length > 0) {
+        return normalizedPrimary;
+      }
+    } catch (_error) {
+      void _error;
+    }
+
+    const fallbackText = await this.fallback.generate(input);
+    const normalizedFallback = typeof fallbackText === 'string' ? fallbackText.trim() : '';
+
+    return normalizedFallback.length > 0 ? normalizedFallback : 'Ok.';
+  }
+}
+```
+
+#### I — Interface Segregation Principle
+
+Ports are small and focused.
+
+Examples:
+
+`src/domain/common/ports/clock.port.ts`
+
+```ts
+export interface ClockPort {
+  now: () => Date;
+}
+```
+
+`src/domain/common/ports/id-generator.port.ts`
+
+```ts
+export interface IdGeneratorPort {
+  generate: () => string;
+}
+```
+
+#### D — Dependency Inversion Principle
+
+Application use cases depend on abstractions (ports), not on concrete infrastructure.
+
+Example: `src/application/messaging/use-cases/process-telegram-updates.use-case.ts`
+
+```ts
+export class ProcessTelegramUpdatesUseCase {
+  constructor(
+    private readonly telegramClient: TelegramClientPort,
+    private readonly offsetStore: TelegramOffsetStorePort,
+    private readonly conversationRepository: ConversationRepositoryPort,
+    private readonly messageRepository: MessageRepositoryPort,
+    private readonly replyGenerator: ReplyGeneratorPort,
+    private readonly idGenerator: IdGeneratorPort,
+    private readonly clock: ClockPort,
+    private readonly domainEventPublisher: DomainEventPublisherPort,
+  ) {}
+}
+```
+
+### Hexagonal Architecture (Ports & Adapters) in code
+
+The hexagonal architecture is demonstrated by concrete examples in each layer:
+
+- **Domain model (entity)**: `src/domain/messaging/message.entity.ts`
+
+```ts
+export class Message {
+  private constructor(private readonly props: MessageProps) {}
+
+  static create(input: MessageProps): Message {
+    return new Message({
+      ...input,
+    });
+  }
+}
+```
+
+- **Port (domain-facing interface)**: `src/domain/messaging/ports/message-repository.port.ts`
+
+```ts
+export interface MessageRepositoryPort {
+  create: (message: Message) => Promise<void>;
+  listByConversationId: (conversationId: string) => Promise<Message[]>;
+  findByTelegramUpdateId: (telegramUpdateId: number) => Promise<Message | null>;
+}
+```
+
+- **Driven adapter (infrastructure implementation)**: `src/infrastructure/messaging/drizzle-message.repository.ts`
+
+```ts
+export class DrizzleMessageRepository implements MessageRepositoryPort {
+  constructor(@Inject(DATABASE) private readonly db: Database) {}
+}
+```
+
+- **Driving adapter (HTTP controller)**: `src/interfaces/http/messaging/messaging.controller.ts`
+
+```ts
+@ApiTags('Messaging')
+@Controller('messaging')
+export class MessagingController {
+  constructor(
+    @Inject(LIST_CONVERSATIONS_USE_CASE)
+    private readonly listConversations: ListConversationsUseCase,
+  ) {}
+}
+```
+
+- **Composition root (wiring ports to adapters)**: `src/interfaces/http/messaging/messaging.http.module.ts`
+
+```ts
+{
+  provide: MESSAGING_MESSAGE_REPOSITORY,
+  useClass: DrizzleMessageRepository,
+}
+```
 
 ## Setup
 
@@ -176,9 +372,26 @@ Optional:
 
 ```bash
 pnpm run validate
+pnpm run test
 pnpm run test:unit
 pnpm run test:integration
 pnpm run test:e2e
 ```
+
+Run a single Vitest test by name:
+
+```bash
+pnpm vitest run -t "<test name>"
+```
+
+After moving files or changing imports, re-run:
+
+```bash
+pnpm run lint
+```
+
+Turbo note:
+
+- This repository does not use Turborepo (`turbo.json` and `turbo` scripts are not present), so commands like `pnpm turbo run ...` do not apply.
 
 E2E tests override external dependencies (Telegram client and password hasher) to avoid real network calls and native module issues.
