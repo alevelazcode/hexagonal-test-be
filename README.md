@@ -2,6 +2,33 @@
 
 NestJS REST API implementing **Auth** + **Messaging (Telegram)** using a **Hexagonal (Ports & Adapters)** architecture.
 
+## Table of contents
+
+- [Hex Test API](#hex-test-api)
+  - [Table of contents](#table-of-contents)
+  - [Requirements](#requirements)
+  - [Tooling](#tooling)
+  - [CI](#ci)
+  - [Architecture](#architecture)
+    - [SOLID](#solid)
+      - [S — Single Responsibility Principle](#s--single-responsibility-principle)
+      - [O — Open/Closed Principle](#o--openclosed-principle)
+      - [L — Liskov Substitution Principle](#l--liskov-substitution-principle)
+      - [I — Interface Segregation Principle](#i--interface-segregation-principle)
+      - [D — Dependency Inversion Principle](#d--dependency-inversion-principle)
+    - [Hexagonal](#hexagonal)
+  - [Setup](#setup)
+  - [Environment variables](#environment-variables)
+  - [Security notes](#security-notes)
+  - [Run](#run)
+  - [Swagger](#swagger)
+  - [Database](#database)
+  - [Auth endpoints](#auth-endpoints)
+  - [Messaging endpoints](#messaging-endpoints)
+  - [Telegram polling](#telegram-polling)
+  - [Deployment (Render)](#deployment-render)
+  - [Tests](#tests)
+
 ## Requirements
 
 - Node.js (recent LTS)
@@ -55,7 +82,7 @@ Layering conventions:
 - `src/infrastructure` contains driven adapters (e.g. Drizzle repositories)
 - `src/interfaces` contains driving adapters (HTTP controllers/modules)
 
-### SOLID principles (what they mean + examples from this repo)
+### SOLID
 
 SOLID is mentioned as an engineering constraint in `RULES.md` and is enforced through the hexagonal separation.
 
@@ -187,7 +214,7 @@ export class ProcessTelegramUpdatesUseCase {
 }
 ```
 
-### Hexagonal Architecture (Ports & Adapters) in code
+### Hexagonal
 
 The hexagonal architecture is demonstrated by concrete examples in each layer:
 
